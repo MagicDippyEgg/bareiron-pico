@@ -1,4 +1,4 @@
-name: Build with Cosmopolitan
+name: Build
 
 on:
   push:
@@ -16,6 +16,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Install ARM Toolchain and Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential cmake ninja-build
+
+      - name: Set up Pico SDK
+        run: |
+          git clone --recursive --depth 1 -b 2.1.0 https://github.com/raspberrypi/pico-sdk.git $HOME/pico-sdk
+          echo "PICO_SDK_PATH=$HOME/pico-sdk" >> $GITHUB_ENV
 
       - name: Install Bun
         uses: oven-sh/setup-bun@v1
@@ -45,17 +57,24 @@ jobs:
         run: |
           bun run build_registries.js
 
-      - name: Build project
+      - name: Build Cosmopolitan polyglot binary
         run: |
           cosmocc src/*.c -O2 -Iinclude -o bareiron.exe
+
+      - name: Build Raspberry Pi Pico W UF2 binary
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DPICO_BOARD=pico_w
+          cmake --build build -j$(nproc)
 
       - name: Upload release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           name: Latest build
-          body: "This is a rolling release of bareiron, compiled from the latest commit on the main branch.\n\nThe executable (`bareiron.exe`) is a Cosmopolitan-built polyglot, and should run on Windows and Linux (and Mac?), despite the file extension."
-          files: bareiron.exe
+          body: "This is a rolling release of bareiron, compiled from the latest commit on the main branch.\n\nIncluded files:\n- `bareiron.exe`: Cosmopolitan polyglot executable for PC (Windows/Linux/Mac).\n- `bareiron.uf2`: Firmware binary for Raspberry Pi Pico W (wireless)."
+          files: |
+            bareiron.exe
+            build/bareiron.uf2
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

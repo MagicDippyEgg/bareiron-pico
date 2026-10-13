@@ -24,6 +24,16 @@ Before compiling, you'll need to dump registry data from a vanilla Minecraft ser
   - To compile a MSYS2-linked binary: install [MSYS2](https://www.msys2.org/), and open the "MSYS2 MSYS" shell. From there, install `gcc` (run `pacman -Sy gcc`), navigate to this project's directory and run `./build.sh`. 
   - To compile and run a Linux binary from Windows: install WSL, and from there install `gcc` and run `./build.sh` in this project's directory.
 - To target an ESP variant, set up a PlatformIO project (select the ESP-IDF framework, **not Arduino**) and clone this repository on top of it. See **Configuration** below for further steps. For better performance, consider changing the clock speed and enabling compiler optimizations. If you don't know how to do this, there are plenty of resources online.
+- To target the **Raspberry Pi Pico 1 W (Wireless)**:
+  - Configure Wi-Fi credentials (`WIFI_SSID` and `WIFI_PASS`) in `include/globals.h`.
+  - Install CMake and the `gcc-arm-none-eabi` toolchain.
+  - Export `PICO_SDK_PATH` pointing to your Pico SDK installation (version 2.0+ recommended).
+  - Build using CMake:
+    ```bash
+    cmake -B build -DCMAKE_BUILD_TYPE=Release -DPICO_BOARD=pico_w
+    cmake --build build -j$(nproc)
+    ```
+  - Flash `build/bareiron.uf2` to your Raspberry Pi Pico W in BOOTSEL mode.
 
 ## Configuration
 Configuring the server requires compiling it from its source code as described in the section above.
